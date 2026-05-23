@@ -214,6 +214,71 @@
       background: linear-gradient(135deg, #7a3060, #c05090);
       box-shadow: 0 4px 20px rgba(180, 60, 120, 0.4);
     }
+
+    /* チューナー */
+    .tuner-section {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid #2a2e5a;
+    }
+
+    .tuner-title {
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      color: #6068a0;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .strings-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .string-btn {
+      background: #1e2248;
+      border: 1px solid #3a3e6a;
+      border-radius: 10px;
+      padding: 10px 4px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.08s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .string-btn:hover {
+      background: #2a2e5a;
+      border-color: #6068c0;
+    }
+
+    .string-btn:active, .string-btn.playing {
+      transform: scale(0.95);
+    }
+
+    .string-btn.playing {
+      background: #2a306a;
+      border-color: #8890e0;
+      box-shadow: 0 0 12px rgba(120, 130, 220, 0.4);
+    }
+
+    .string-num {
+      font-size: 0.65rem;
+      color: #5060a0;
+    }
+
+    .string-note {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #c0c8ff;
+    }
+
+    .string-hz {
+      font-size: 0.58rem;
+      color: #4850a0;
+    }
   </style>
 </head>
 <body>
@@ -253,6 +318,42 @@
   </div>
 
   <button class="start-btn" id="startBtn">スタート</button>
+
+  <div class="tuner-section">
+    <div class="tuner-title">ギターチューニング</div>
+    <div class="strings-grid">
+      <button class="string-btn" data-freq="82.41"  data-string="6">
+        <span class="string-num">6弦</span>
+        <span class="string-note">E</span>
+        <span class="string-hz">82 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="110.00" data-string="5">
+        <span class="string-num">5弦</span>
+        <span class="string-note">A</span>
+        <span class="string-hz">110 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="146.83" data-string="4">
+        <span class="string-num">4弦</span>
+        <span class="string-note">D</span>
+        <span class="string-hz">147 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="196.00" data-string="3">
+        <span class="string-num">3弦</span>
+        <span class="string-note">G</span>
+        <span class="string-hz">196 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="246.94" data-string="2">
+        <span class="string-num">2弦</span>
+        <span class="string-note">B</span>
+        <span class="string-hz">247 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="329.63" data-string="1">
+        <span class="string-num">1弦</span>
+        <span class="string-note">E</span>
+        <span class="string-hz">330 Hz</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -367,6 +468,69 @@
   // 初期化
   setBpm(120);
   pendulum.style.setProperty('--period', '500ms');
+
+  // ギターチューニング
+  let activeStringNode = null;
+  let activeStringBtn = null;
+
+  function playString(freq, btn) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // 前の音を停止
+    if (activeStringNode) {
+      try { activeStringNode.stop(); } catch(e) {}
+      activeStringNode = null;
+    }
+    if (activeStringBtn) {
+      activeStringBtn.classList.remove('playing');
+    }
+
+    const now = audioCtx.currentTime;
+    const duration = 3.0;
+
+    // 基音 + 倍音でギターらしい音色に
+    const harmonics = [
+      { ratio: 1,   vol: 0.6 },
+      { ratio: 2,   vol: 0.25 },
+      { ratio: 3,   vol: 0.10 },
+      { ratio: 4,   vol: 0.05 },
+    ];
+
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(volume * 0.8, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    masterGain.connect(audioCtx.destination);
+
+    let lastOsc = null;
+    harmonics.forEach(h => {
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq * h.ratio;
+      g.gain.value = h.vol;
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + duration);
+      lastOsc = osc;
+    });
+
+    activeStringNode = { stop: () => masterGain.disconnect() };
+    activeStringBtn = btn;
+    btn.classList.add('playing');
+
+    setTimeout(() => {
+      btn.classList.remove('playing');
+      if (activeStringBtn === btn) activeStringBtn = null;
+    }, duration * 1000);
+  }
+
+  document.querySelectorAll('.string-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const freq = parseFloat(btn.dataset.freq);
+      playString(freq, btn);
+    });
+  });
 </script>
 </body>
 </html>
