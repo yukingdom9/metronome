@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メトロノーム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #16213e;
+      border-radius: 20px;
+      padding: 40px;
+      width: 360px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      letter-spacing: 0.2em;
+      color: #a0a8d0;
+      margin-bottom: 32px;
+      text-transform: uppercase;
+    }
+
+    /* 振り子 */
+    .pendulum-area {
+      height: 160px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin-bottom: 28px;
+    }
+
+    .pendulum {
+      width: 4px;
+      height: 120px;
+      background: linear-gradient(to bottom, #4a4e8a, #8b8fd8);
+      border-radius: 2px;
+      transform-origin: top center;
+      position: relative;
+      transition: none;
+    }
+
+    .pendulum.swinging {
+      animation: swing var(--period) ease-in-out infinite alternate;
+    }
+
+    .pendulum-bob {
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle at 35% 35%, #b0b4ff, #6366c8);
+      border-radius: 50%;
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 12px rgba(100, 100, 255, 0.5);
+    }
+
+    @keyframes swing {
+      from { transform: rotate(-30deg); }
+      to   { transform: rotate(30deg); }
+    }
+
+    /* ビート表示 */
+    .beat-light {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #2a2a4a;
+      margin: 0 auto 28px;
+      transition: background 0.05s;
+      box-shadow: 0 0 0 rgba(130, 130, 255, 0);
+    }
+
+    .beat-light.flash {
+      background: #8888ff;
+      box-shadow: 0 0 20px rgba(130, 130, 255, 0.8);
+    }
+
+    /* BPM */
+    .bpm-display {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #c8ccff;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .bpm-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: #6068a0;
+      margin-bottom: 20px;
+    }
+
+    /* スライダー共通 */
+    .control-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #8088b8;
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
+
+    input[type=range] {
+      width: 100%;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #2a2a4a;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #7077d4;
+      box-shadow: 0 0 6px rgba(112, 119, 212, 0.6);
+      transition: background 0.2s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      background: #9099e8;
+    }
+
+    /* タップテンポ & 手動入力 */
+    .bpm-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .bpm-input {
+      width: 80px;
+      background: #0f1128;
+      border: 1px solid #3a3e6a;
+      color: #c8ccff;
+      font-size: 1.1rem;
+      text-align: center;
+      border-radius: 8px;
+      padding: 8px 4px;
+      outline: none;
+    }
+
+    .bpm-input:focus {
+      border-color: #7077d4;
+    }
+
+    .tap-btn {
+      flex: 1;
+      background: #2a2e5a;
+      border: none;
+      color: #a0a8d8;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.08s;
+    }
+
+    .tap-btn:active {
+      background: #3a3e7a;
+      transform: scale(0.97);
+    }
+
+    /* スタート/ストップ */
+    .start-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      text-transform: uppercase;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      background: linear-gradient(135deg, #4a50a8, #7077d4);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(70, 80, 180, 0.4);
+    }
+
+    .start-btn:hover {
+      background: linear-gradient(135deg, #5a60c0, #8088e4);
+      box-shadow: 0 6px 28px rgba(70, 80, 200, 0.5);
+    }
+
+    .start-btn:active { transform: scale(0.98); }
+
+    .start-btn.running {
+      background: linear-gradient(135deg, #7a3060, #c05090);
+      box-shadow: 0 4px 20px rgba(180, 60, 120, 0.4);
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Metronome</h1>
+
+  <div class="pendulum-area">
+    <div class="pendulum" id="pendulum">
+      <div class="pendulum-bob"></div>
+    </div>
+  </div>
+
+  <div class="beat-light" id="beatLight"></div>
+
+  <div class="bpm-display" id="bpmDisplay">120</div>
+  <div class="bpm-label">BPM</div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>BPM</span>
+      <span id="bpmVal">120</span>
+    </div>
+    <input type="range" id="bpmSlider" min="20" max="280" value="120">
+  </div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>ボリューム</span>
+      <span id="volVal">70%</span>
+    </div>
+    <input type="range" id="volSlider" min="0" max="100" value="70">
+  </div>
+
+  <div class="bpm-controls">
+    <input type="number" class="bpm-input" id="bpmInput" min="20" max="280" value="120">
+    <button class="tap-btn" id="tapBtn">タップ</button>
+  </div>
+
+  <button class="start-btn" id="startBtn">スタート</button>
+</div>
+
+<script>
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  let bpm = 120;
+  let volume = 0.7;
+  let running = false;
+  let nextBeatTime = 0;
+  let schedulerTimer = null;
+  let tapTimes = [];
+
+  const pendulum = document.getElementById('pendulum');
+  const beatLight = document.getElementById('beatLight');
+  const bpmDisplay = document.getElementById('bpmDisplay');
+  const bpmSlider = document.getElementById('bpmSlider');
+  const bpmVal = document.getElementById('bpmVal');
+  const bpmInput = document.getElementById('bpmInput');
+  const volSlider = document.getElementById('volSlider');
+  const volVal = document.getElementById('volVal');
+  const startBtn = document.getElementById('startBtn');
+  const tapBtn = document.getElementById('tapBtn');
+
+  function setBpm(val) {
+    bpm = Math.min(280, Math.max(20, val));
+    bpmDisplay.textContent = bpm;
+    bpmVal.textContent = bpm;
+    bpmSlider.value = bpm;
+    bpmInput.value = bpm;
+    const period = (60 / bpm) * 1000;
+    pendulum.style.setProperty('--period', period + 'ms');
+  }
+
+  function playClick(time, accent) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.frequency.value = accent ? 1200 : 880;
+    gain.gain.setValueAtTime(volume, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
+
+    osc.start(time);
+    osc.stop(time + 0.07);
+
+    // UI フラッシュ
+    const delay = (time - audioCtx.currentTime) * 1000;
+    setTimeout(() => {
+      beatLight.classList.add('flash');
+      setTimeout(() => beatLight.classList.remove('flash'), 80);
+    }, Math.max(0, delay));
+  }
+
+  function scheduler() {
+    while (nextBeatTime < audioCtx.currentTime + 0.1) {
+      playClick(nextBeatTime, false);
+      nextBeatTime += 60 / bpm;
+    }
+  }
+
+  function start() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    running = true;
+    nextBeatTime = audioCtx.currentTime;
+    schedulerTimer = setInterval(scheduler, 25);
+    pendulum.classList.add('swinging');
+    startBtn.textContent = 'ストップ';
+    startBtn.classList.add('running');
+  }
+
+  function stop() {
+    running = false;
+    clearInterval(schedulerTimer);
+    pendulum.classList.remove('swinging');
+    startBtn.textContent = 'スタート';
+    startBtn.classList.remove('running');
+  }
+
+  startBtn.addEventListener('click', () => running ? stop() : start());
+
+  bpmSlider.addEventListener('input', () => setBpm(parseInt(bpmSlider.value)));
+
+  bpmInput.addEventListener('change', () => setBpm(parseInt(bpmInput.value)));
+
+  volSlider.addEventListener('input', () => {
+    volume = volSlider.value / 100;
+    volVal.textContent = volSlider.value + '%';
+  });
+
+  tapBtn.addEventListener('click', () => {
+    const now = Date.now();
+    tapTimes.push(now);
+    // 直近5回のみ使用
+    if (tapTimes.length > 5) tapTimes.shift();
+    if (tapTimes.length >= 2) {
+      const intervals = [];
+      for (let i = 1; i < tapTimes.length; i++) {
+        intervals.push(tapTimes[i] - tapTimes[i - 1]);
+      }
+      const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      setBpm(Math.round(60000 / avg));
+    }
+    // 2秒以上空いたらリセット
+    setTimeout(() => {
+      if (tapTimes.length > 0 && Date.now() - tapTimes[tapTimes.length - 1] > 2000) {
+        tapTimes = [];
+      }
+    }, 2100);
+  });
+
+  // 初期化
+  setBpm(120);
+  pendulum.style.setProperty('--period', '500ms');
+</script>
+</body>
+</html>
