@@ -1,359 +1,536 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>タイマー</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メトロノーム</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: #1a1a2e;
-    color: #eee;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-  }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
 
-  .container {
-    text-align: center;
-    padding: 40px 32px;
-    background: #16213e;
-    border-radius: 24px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    width: 340px;
-  }
+    .container {
+      background: #16213e;
+      border-radius: 20px;
+      padding: 40px;
+      width: 360px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      text-align: center;
+    }
 
-  h1 {
-    font-size: 15px;
-    font-weight: 500;
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    color: #7c83fd;
-    margin-bottom: 36px;
-  }
+    h1 {
+      font-size: 1.4rem;
+      letter-spacing: 0.2em;
+      color: #a0a8d0;
+      margin-bottom: 32px;
+      text-transform: uppercase;
+    }
 
-  .display {
-    font-size: 88px;
-    font-weight: 200;
-    letter-spacing: -2px;
-    line-height: 1;
-    color: #fff;
-    margin-bottom: 10px;
-    font-variant-numeric: tabular-nums;
-    transition: color 0.3s;
-  }
+    /* 振り子 */
+    .pendulum-area {
+      height: 160px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      margin-bottom: 28px;
+    }
 
-  .display.urgent { color: #ff6b6b; }
-  .display.done   { color: #6bffb8; }
+    .pendulum {
+      width: 4px;
+      height: 120px;
+      background: linear-gradient(to bottom, #4a4e8a, #8b8fd8);
+      border-radius: 2px;
+      transform-origin: top center;
+      position: relative;
+      transition: none;
+    }
 
-  .progress-ring {
-    position: relative;
-    width: 200px;
-    height: 200px;
-    margin: 0 auto 32px;
-  }
+    .pendulum.swinging {
+      animation: swing var(--period) ease-in-out infinite alternate;
+    }
 
-  .progress-ring svg {
-    transform: rotate(-90deg);
-    position: absolute;
-    top: 0; left: 0;
-  }
+    .pendulum-bob {
+      width: 24px;
+      height: 24px;
+      background: radial-gradient(circle at 35% 35%, #b0b4ff, #6366c8);
+      border-radius: 50%;
+      position: absolute;
+      bottom: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      box-shadow: 0 0 12px rgba(100, 100, 255, 0.5);
+    }
 
-  .progress-ring .display {
-    position: absolute;
-    width: 100%;
-    top: 50%;
-    transform: translateY(-50%);
-  }
+    @keyframes swing {
+      from { transform: rotate(-30deg); }
+      to   { transform: rotate(30deg); }
+    }
 
-  circle.track {
-    fill: none;
-    stroke: #0f3460;
-    stroke-width: 6;
-  }
+    /* ビート表示 */
+    .beat-light {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #2a2a4a;
+      margin: 0 auto 28px;
+      transition: background 0.05s;
+      box-shadow: 0 0 0 rgba(130, 130, 255, 0);
+    }
 
-  circle.progress {
-    fill: none;
-    stroke: #7c83fd;
-    stroke-width: 6;
-    stroke-linecap: round;
-    transition: stroke-dashoffset 1s linear, stroke 0.3s;
-  }
+    .beat-light.flash {
+      background: #8888ff;
+      box-shadow: 0 0 20px rgba(130, 130, 255, 0.8);
+    }
 
-  circle.progress.urgent { stroke: #ff6b6b; }
-  circle.progress.done   { stroke: #6bffb8; }
+    /* BPM */
+    .bpm-display {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #c8ccff;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
 
-  .presets {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-bottom: 24px;
-  }
+    .bpm-label {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: #6068a0;
+      margin-bottom: 20px;
+    }
 
-  .preset-btn {
-    background: #0f3460;
-    border: 2px solid transparent;
-    color: #aaa;
-    border-radius: 12px;
-    padding: 8px 0;
-    width: 64px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
+    /* スライダー共通 */
+    .control-group {
+      margin-bottom: 20px;
+      text-align: left;
+    }
 
-  .preset-btn:hover { background: #1a4a8a; color: #fff; }
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: #8088b8;
+      margin-bottom: 6px;
+      letter-spacing: 0.05em;
+    }
 
-  .preset-btn.active {
-    border-color: #7c83fd;
-    color: #7c83fd;
-    background: #1a1a3e;
-  }
+    input[type=range] {
+      width: 100%;
+      appearance: none;
+      height: 6px;
+      border-radius: 3px;
+      background: #2a2a4a;
+      outline: none;
+      cursor: pointer;
+    }
 
-  .adjusters {
-    display: flex;
-    gap: 6px;
-    justify-content: center;
-    margin-bottom: 16px;
-  }
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #7077d4;
+      box-shadow: 0 0 6px rgba(112, 119, 212, 0.6);
+      transition: background 0.2s;
+    }
 
-  .adj-btn {
-    background: #0f3460;
-    border: none;
-    color: #aaa;
-    border-radius: 10px;
-    padding: 7px 0;
-    flex: 1;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-  }
+    input[type=range]::-webkit-slider-thumb:hover {
+      background: #9099e8;
+    }
 
-  .adj-btn:hover { background: #1a4a8a; color: #fff; }
-  .adj-btn:active { transform: scale(0.95); }
+    /* タップテンポ & 手動入力 */
+    .bpm-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
 
-  .start-btn {
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 14px;
-    background: #7c83fd;
-    color: #fff;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 1px;
-    transition: all 0.2s;
-  }
+    .bpm-input {
+      width: 80px;
+      background: #0f1128;
+      border: 1px solid #3a3e6a;
+      color: #c8ccff;
+      font-size: 1.1rem;
+      text-align: center;
+      border-radius: 8px;
+      padding: 8px 4px;
+      outline: none;
+    }
 
-  .start-btn:hover  { background: #9da2ff; transform: translateY(-1px); }
-  .start-btn:active { transform: translateY(0); }
-  .start-btn.running { background: #444; }
-  .start-btn.running:hover { background: #555; }
-</style>
+    .bpm-input:focus {
+      border-color: #7077d4;
+    }
+
+    .tap-btn {
+      flex: 1;
+      background: #2a2e5a;
+      border: none;
+      color: #a0a8d8;
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.08s;
+    }
+
+    .tap-btn:active {
+      background: #3a3e7a;
+      transform: scale(0.97);
+    }
+
+    /* スタート/ストップ */
+    .start-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      text-transform: uppercase;
+      transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+      background: linear-gradient(135deg, #4a50a8, #7077d4);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(70, 80, 180, 0.4);
+    }
+
+    .start-btn:hover {
+      background: linear-gradient(135deg, #5a60c0, #8088e4);
+      box-shadow: 0 6px 28px rgba(70, 80, 200, 0.5);
+    }
+
+    .start-btn:active { transform: scale(0.98); }
+
+    .start-btn.running {
+      background: linear-gradient(135deg, #7a3060, #c05090);
+      box-shadow: 0 4px 20px rgba(180, 60, 120, 0.4);
+    }
+
+    /* チューナー */
+    .tuner-section {
+      margin-top: 28px;
+      padding-top: 24px;
+      border-top: 1px solid #2a2e5a;
+    }
+
+    .tuner-title {
+      font-size: 0.78rem;
+      letter-spacing: 0.15em;
+      color: #6068a0;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .strings-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .string-btn {
+      background: #1e2248;
+      border: 1px solid #3a3e6a;
+      border-radius: 10px;
+      padding: 10px 4px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.08s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .string-btn:hover {
+      background: #2a2e5a;
+      border-color: #6068c0;
+    }
+
+    .string-btn:active, .string-btn.playing {
+      transform: scale(0.95);
+    }
+
+    .string-btn.playing {
+      background: #2a306a;
+      border-color: #8890e0;
+      box-shadow: 0 0 12px rgba(120, 130, 220, 0.4);
+    }
+
+    .string-num {
+      font-size: 0.65rem;
+      color: #5060a0;
+    }
+
+    .string-note {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #c0c8ff;
+    }
+
+    .string-hz {
+      font-size: 0.58rem;
+      color: #4850a0;
+    }
+  </style>
 </head>
 <body>
 <div class="container">
-  <h1>Timer</h1>
+  <h1>Metronome</h1>
 
-  <div class="progress-ring">
-    <svg width="200" height="200" viewBox="0 0 200 200">
-      <circle class="track"    cx="100" cy="100" r="88"/>
-      <circle class="progress" cx="100" cy="100" r="88" id="ring"/>
-    </svg>
-    <div class="display" id="display">3:00</div>
+  <div class="pendulum-area">
+    <div class="pendulum" id="pendulum">
+      <div class="pendulum-bob"></div>
+    </div>
   </div>
 
-  <div class="presets">
-    <button class="preset-btn" onclick="setPreset(1)">1分</button>
-    <button class="preset-btn active" onclick="setPreset(3)">3分</button>
-    <button class="preset-btn" onclick="setPreset(5)">5分</button>
-    <button class="preset-btn" onclick="setPreset(10)">10分</button>
+  <div class="beat-light" id="beatLight"></div>
+
+  <div class="bpm-display" id="bpmDisplay">120</div>
+  <div class="bpm-label">BPM</div>
+
+  <div class="control-group">
+    <div class="control-label">
+      <span>BPM</span>
+      <span id="bpmVal">120</span>
+    </div>
+    <input type="range" id="bpmSlider" min="20" max="280" value="120">
   </div>
 
-  <div class="adjusters">
-    <button class="adj-btn" onclick="adjust(-60)">−1分</button>
-    <button class="adj-btn" onclick="adjust(-30)">−30秒</button>
-    <button class="adj-btn" onclick="adjust(30)">+30秒</button>
-    <button class="adj-btn" onclick="adjust(60)">+1分</button>
+  <div class="control-group">
+    <div class="control-label">
+      <span>ボリューム</span>
+      <span id="volVal">70%</span>
+    </div>
+    <input type="range" id="volSlider" min="0" max="100" value="70">
   </div>
 
-  <button class="start-btn" id="startBtn" onclick="toggle()">スタート</button>
+  <div class="bpm-controls">
+    <input type="number" class="bpm-input" id="bpmInput" min="20" max="280" value="120">
+    <button class="tap-btn" id="tapBtn">タップ</button>
+  </div>
+
+  <button class="start-btn" id="startBtn">スタート</button>
+
+  <div class="tuner-section">
+    <div class="tuner-title">ギターチューニング</div>
+    <div class="strings-grid">
+      <button class="string-btn" data-freq="82.41"  data-string="6">
+        <span class="string-num">6弦</span>
+        <span class="string-note">E</span>
+        <span class="string-hz">82 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="110.00" data-string="5">
+        <span class="string-num">5弦</span>
+        <span class="string-note">A</span>
+        <span class="string-hz">110 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="146.83" data-string="4">
+        <span class="string-num">4弦</span>
+        <span class="string-note">D</span>
+        <span class="string-hz">147 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="196.00" data-string="3">
+        <span class="string-num">3弦</span>
+        <span class="string-note">G</span>
+        <span class="string-hz">196 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="246.94" data-string="2">
+        <span class="string-num">2弦</span>
+        <span class="string-note">B</span>
+        <span class="string-hz">247 Hz</span>
+      </button>
+      <button class="string-btn" data-freq="329.63" data-string="1">
+        <span class="string-num">1弦</span>
+        <span class="string-note">E</span>
+        <span class="string-hz">330 Hz</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
-  const CIRCUMFERENCE = 2 * Math.PI * 88;
-  const ring = document.getElementById('ring');
-  const display = document.getElementById('display');
-  const startBtn = document.getElementById('startBtn');
-  ring.style.strokeDasharray = CIRCUMFERENCE;
+  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  let totalSeconds = 180;
-  let remaining = 180;
+  let bpm = 120;
+  let volume = 0.7;
   let running = false;
-  let worker = null;
+  let nextBeatTime = 0;
+  let schedulerTimer = null;
+  let tapTimes = [];
 
-  // ---- Web Worker (inline via Blob) --------------------------------
-  // バックグラウンドタブでも throttle されない独立スレッドで動作する。
-  // さらに Date.now() で実経過時間を測るため、インターバル自体がズレても
-  // 表示される残り秒数は常に正確に保たれる。
-  const workerCode = `
-    let intervalId = null;
-    let deadline = 0;   // 終了予定の Date.now() 値
+  const pendulum = document.getElementById('pendulum');
+  const beatLight = document.getElementById('beatLight');
+  const bpmDisplay = document.getElementById('bpmDisplay');
+  const bpmSlider = document.getElementById('bpmSlider');
+  const bpmVal = document.getElementById('bpmVal');
+  const bpmInput = document.getElementById('bpmInput');
+  const volSlider = document.getElementById('volSlider');
+  const volVal = document.getElementById('volVal');
+  const startBtn = document.getElementById('startBtn');
+  const tapBtn = document.getElementById('tapBtn');
 
-    self.onmessage = function(e) {
-      if (e.data.type === 'start') {
-        clearInterval(intervalId);
-        deadline = Date.now() + e.data.seconds * 1000;
-
-        intervalId = setInterval(function() {
-          const msLeft = deadline - Date.now();
-          const remaining = Math.max(0, Math.ceil(msLeft / 1000));
-          self.postMessage({ type: 'tick', remaining: remaining });
-          if (remaining <= 0) {
-            clearInterval(intervalId);
-            self.postMessage({ type: 'done' });
-          }
-        }, 250);   // 250ms ポーリングで 1 秒単位の切り替わりを確実に捉える
-
-      } else if (e.data.type === 'stop') {
-        clearInterval(intervalId);
-      }
-    };
-  `;
-  const blob = new Blob([workerCode], { type: 'application/javascript' });
-  const workerUrl = URL.createObjectURL(blob);
-
-  function createWorker() {
-    if (worker) worker.terminate();
-    worker = new Worker(workerUrl);
-    worker.onmessage = function(e) {
-      if (e.data.type === 'tick') {
-        remaining = e.data.remaining;
-        updateDisplay();
-        updateRing();
-        if (remaining <= 10) {
-          display.classList.add('urgent');
-          ring.classList.add('urgent');
-        }
-      } else if (e.data.type === 'done') {
-        finish();
-      }
-    };
-  }
-  // ------------------------------------------------------------------
-
-  function setPreset(minutes) {
-    if (running) return;
-    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    totalSeconds = minutes * 60;
-    remaining = totalSeconds;
-    updateDisplay();
-    resetRing();
+  function setBpm(val) {
+    bpm = Math.min(280, Math.max(20, val));
+    bpmDisplay.textContent = bpm;
+    bpmVal.textContent = bpm;
+    bpmSlider.value = bpm;
+    bpmInput.value = bpm;
+    const period = (60 / bpm) * 1000;
+    pendulum.style.setProperty('--period', period + 'ms');
   }
 
-  function adjust(seconds) {
-    if (running) return;
-    totalSeconds = Math.max(30, totalSeconds + seconds);
-    remaining = totalSeconds;
-    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
-    updateDisplay();
-    resetRing();
+  function playClick(time, accent) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.frequency.value = accent ? 1200 : 880;
+    gain.gain.setValueAtTime(volume, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.06);
+
+    osc.start(time);
+    osc.stop(time + 0.07);
+
+    // UI フラッシュ
+    const delay = (time - audioCtx.currentTime) * 1000;
+    setTimeout(() => {
+      beatLight.classList.add('flash');
+      setTimeout(() => beatLight.classList.remove('flash'), 80);
+    }, Math.max(0, delay));
   }
 
-  function toggle() {
-    running ? reset() : start();
+  function scheduler() {
+    while (nextBeatTime < audioCtx.currentTime + 0.1) {
+      playClick(nextBeatTime, false);
+      nextBeatTime += 60 / bpm;
+    }
   }
 
   function start() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     running = true;
-    startBtn.textContent = 'リセット';
+    nextBeatTime = audioCtx.currentTime;
+    schedulerTimer = setInterval(scheduler, 25);
+    pendulum.classList.add('swinging');
+    startBtn.textContent = 'ストップ';
     startBtn.classList.add('running');
-    display.classList.remove('urgent', 'done');
-    ring.classList.remove('urgent', 'done');
-    updateDisplay();
-    updateRing();
-    createWorker();
-    worker.postMessage({ type: 'start', seconds: remaining });
   }
 
-  function reset() {
-    if (worker) { worker.postMessage({ type: 'stop' }); worker.terminate(); worker = null; }
+  function stop() {
     running = false;
-    remaining = totalSeconds;
-    updateDisplay();
-    resetRing();
-    display.classList.remove('urgent', 'done');
-    ring.classList.remove('urgent', 'done');
+    clearInterval(schedulerTimer);
+    pendulum.classList.remove('swinging');
     startBtn.textContent = 'スタート';
     startBtn.classList.remove('running');
   }
 
-  function finish() {
-    if (worker) { worker.terminate(); worker = null; }
-    running = false;
-    display.classList.remove('urgent');
-    display.classList.add('done');
-    ring.classList.remove('urgent');
-    ring.classList.add('done');
-    startBtn.textContent = 'スタート';
-    startBtn.classList.remove('running');
-    playAlarm();
-  }
+  startBtn.addEventListener('click', () => running ? stop() : start());
 
-  function updateDisplay() {
-    const m = Math.floor(remaining / 60);
-    const s = remaining % 60;
-    display.textContent = `${m}:${String(s).padStart(2, '0')}`;
-  }
+  bpmSlider.addEventListener('input', () => setBpm(parseInt(bpmSlider.value)));
 
-  function updateRing() {
-    const fraction = totalSeconds > 0 ? remaining / totalSeconds : 0;
-    ring.style.strokeDashoffset = CIRCUMFERENCE * (1 - fraction);
-  }
+  bpmInput.addEventListener('change', () => setBpm(parseInt(bpmInput.value)));
 
-  function resetRing() {
-    ring.style.strokeDashoffset = 0;
-  }
+  volSlider.addEventListener('input', () => {
+    volume = volSlider.value / 100;
+    volVal.textContent = volSlider.value + '%';
+  });
 
-  function playAlarm() {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  tapBtn.addEventListener('click', () => {
+    const now = Date.now();
+    tapTimes.push(now);
+    // 直近5回のみ使用
+    if (tapTimes.length > 5) tapTimes.shift();
+    if (tapTimes.length >= 2) {
+      const intervals = [];
+      for (let i = 1; i < tapTimes.length; i++) {
+        intervals.push(tapTimes[i] - tapTimes[i - 1]);
+      }
+      const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      setBpm(Math.round(60000 / avg));
+    }
+    // 2秒以上空いたらリセット
+    setTimeout(() => {
+      if (tapTimes.length > 0 && Date.now() - tapTimes[tapTimes.length - 1] > 2000) {
+        tapTimes = [];
+      }
+    }, 2100);
+  });
 
-    const beeps = [
-      { freq: 880,  start: 0,    dur: 0.12 },
-      { freq: 880,  start: 0.15, dur: 0.12 },
-      { freq: 1320, start: 0.30, dur: 0.55 },
+  // 初期化
+  setBpm(120);
+  pendulum.style.setProperty('--period', '500ms');
+
+  // ギターチューニング
+  let activeStringNode = null;
+  let activeStringBtn = null;
+
+  function playString(freq, btn) {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    // 前の音を停止
+    if (activeStringNode) {
+      try { activeStringNode.stop(); } catch(e) {}
+      activeStringNode = null;
+    }
+    if (activeStringBtn) {
+      activeStringBtn.classList.remove('playing');
+    }
+
+    const now = audioCtx.currentTime;
+    const duration = 3.0;
+
+    // 基音 + 倍音でギターらしい音色に
+    const harmonics = [
+      { ratio: 1,   vol: 0.6 },
+      { ratio: 2,   vol: 0.25 },
+      { ratio: 3,   vol: 0.10 },
+      { ratio: 4,   vol: 0.05 },
     ];
 
-    beeps.forEach(({ freq, start, dur }) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+    const masterGain = audioCtx.createGain();
+    masterGain.gain.setValueAtTime(volume * 0.8, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    masterGain.connect(audioCtx.destination);
+
+    let lastOsc = null;
+    harmonics.forEach(h => {
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
       osc.type = 'sine';
-      osc.frequency.value = freq;
-      const t = ctx.currentTime + start;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.4, t + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      osc.start(t);
-      osc.stop(t + dur + 0.05);
+      osc.frequency.value = freq * h.ratio;
+      g.gain.value = h.vol;
+      osc.connect(g);
+      g.connect(masterGain);
+      osc.start(now);
+      osc.stop(now + duration);
+      lastOsc = osc;
     });
 
+    activeStringNode = { stop: () => masterGain.disconnect() };
+    activeStringBtn = btn;
+    btn.classList.add('playing');
+
     setTimeout(() => {
-      display.classList.remove('done');
-      ring.classList.remove('done');
-    }, 2000);
+      btn.classList.remove('playing');
+      if (activeStringBtn === btn) activeStringBtn = null;
+    }, duration * 1000);
   }
 
-  updateDisplay();
-  resetRing();
+  document.querySelectorAll('.string-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const freq = parseFloat(btn.dataset.freq);
+      playString(freq, btn);
+    });
+  });
 </script>
 </body>
 </html>
